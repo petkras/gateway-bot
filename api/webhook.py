@@ -41,6 +41,7 @@ def groq_ask(text: str) -> str:
         headers={
             "Content-Type": "application/json",
             "Authorization": f"Bearer {GROQ_API_KEY}",
+            "User-Agent": "Mozilla/5.0 (compatible; GatewayBot/1.0)",
         },
     )
     try:
