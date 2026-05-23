@@ -61,11 +61,7 @@ class handler(BaseHTTPRequestHandler):
         text = (msg.get("text") or "").strip()
 
         if chat_id and text:
-            if text.startswith("/debug"):
-                key_len = len(GROQ_API_KEY)
-                key_start = GROQ_API_KEY[:8] if key_len > 8 else "пусто"
-                reply = f"GROQ_API_KEY: длина={key_len}, начало={key_start}"
-            elif text.startswith("/start"):
+            if text.startswith("/start"):
                 reply = (
                     "Привет! Я ассистент администратора JSON-RPC шлюза.\n\n"
                     "Задай вопрос о работе шлюза, интеграции с 1С, "
