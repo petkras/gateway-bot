@@ -1,5 +1,6 @@
 import json
 import os
+import urllib.error
 import urllib.request
 from http.server import BaseHTTPRequestHandler
 
@@ -42,7 +43,10 @@ def groq_ask(text: str) -> str:
             "Authorization": f"Bearer {GROQ_API_KEY}",
         },
     )
-    resp = json.loads(urllib.request.urlopen(r, timeout=30).read())
+    try:
+        resp = json.loads(urllib.request.urlopen(r, timeout=30).read())
+    except urllib.error.HTTPError as e:
+        raise Exception(f"Groq {e.code}: {e.read().decode()[:300]}")
     return resp["choices"][0]["message"]["content"]
 
 
