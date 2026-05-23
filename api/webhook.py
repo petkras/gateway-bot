@@ -3,23 +3,16 @@ import os
 import urllib.request
 from http.server import BaseHTTPRequestHandler
 
-from groq import Groq
 
 SYSTEM_PROMPT = (
     "Ты — интеллектуальный ассистент администратора JSON-RPC шлюза интеграции "
-    "с платформой 1С:Предприятие. Помогаешь разбираться в работе системы.\n\n"
-    "Отвечаешь на вопросы о:\n"
-    "- Протоколе JSON-RPC 2.0: структура запросов/ответов, коды ошибок\n"
-    "- Настройке соединения: IP-адрес, порт, таймаут, авторизация\n"
-    "- Статусах транзакций: success, error, pending — что означают\n"
-    "- Интеграции с 1С: методы API, обработка ошибок, синхронизация\n"
-    "- Мониторинге шлюза: метрики RPS, соединения, журнал транзакций\n\n"
+    "с платформой 1С:Предприятие. Помогаешь разбираться в работе системы. "
     "Отвечай чётко, кратко и по делу. Используй русский язык."
 )
 
-groq_client = Groq(api_key=os.environ.get("GROQ_API_KEY", ""))
 TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN", "")
 TELEGRAM_API = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}"
+GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
 
 
 def tg_send(chat_id: int, text: str) -> None:
@@ -30,6 +23,27 @@ def tg_send(chat_id: int, text: str) -> None:
         headers={"Content-Type": "application/json"},
     )
     urllib.request.urlopen(r, timeout=10)
+
+
+def groq_ask(text: str) -> str:
+    payload = json.dumps({
+        "model": "llama-3.1-8b-instant",
+        "messages": [
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "user", "content": text},
+        ],
+        "max_tokens": 512,
+    }).encode()
+    r = urllib.request.Request(
+        "https://api.groq.com/openai/v1/chat/completions",
+        data=payload,
+        headers={
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {GROQ_API_KEY}",
+        },
+    )
+    resp = json.loads(urllib.request.urlopen(r, timeout=30).read())
+    return resp["choices"][0]["message"]["content"]
 
 
 class handler(BaseHTTPRequestHandler):
@@ -50,15 +64,7 @@ class handler(BaseHTTPRequestHandler):
                 )
             else:
                 try:
-                    completion = groq_client.chat.completions.create(
-                        model="llama-3.1-8b-instant",
-                        messages=[
-                            {"role": "system", "content": SYSTEM_PROMPT},
-                            {"role": "user", "content": text},
-                        ],
-                        max_tokens=512,
-                    )
-                    reply = completion.choices[0].message.content
+                    reply = groq_ask(text)
                 except Exception as e:
                     reply = f"Ошибка AI: {e}"
 
