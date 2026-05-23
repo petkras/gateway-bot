@@ -34,9 +34,9 @@ def tg_send(chat_id: int, text: str) -> None:
     urllib.request.urlopen(r, timeout=10)
 
 
-@app.route("/", methods=["POST"])
-@app.route("/api/webhook", methods=["POST"])
-def webhook():
+@app.route("/", defaults={"path": ""}, methods=["POST"])
+@app.route("/<path:path>", methods=["POST"])
+def webhook(path=None):
     body = req.get_json(silent=True) or {}
     msg = body.get("message") or body.get("edited_message") or {}
     chat_id = (msg.get("chat") or {}).get("id")
